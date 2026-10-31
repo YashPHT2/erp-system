@@ -1,0 +1,16 @@
+{
+  "name": "edufinance",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Finance and payroll module for the School and University ERP",
+  "scripts": {
+    "install:all": "npm install --prefix backend && npm install --prefix frontend",
+    "dev": "concurrently -k -n api,web -c blue,green \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
+    "test": "npm test --prefix backend",
+    "seed": "npm run seed --prefix backend",
+    "start": "npm start --prefix backend"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
