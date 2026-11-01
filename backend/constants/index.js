@@ -19,6 +19,7 @@ const PERMISSIONS = {
   'payroll.read': ['SUPER_ADMIN', 'PRINCIPAL', 'ACCOUNTANT'],
   'payroll.write': ['SUPER_ADMIN', 'ACCOUNTANT'],
   'settings.read': ['SUPER_ADMIN', 'PRINCIPAL', 'ACCOUNTANT', 'FEE_CLERK'],
+  'users.manage': ['SUPER_ADMIN'],
 };
 
 const PERMISSION_LABELS = {
@@ -31,6 +32,7 @@ const PERMISSION_LABELS = {
   'payroll.read': 'View payroll',
   'payroll.write': 'Set salaries and process payroll',
   'settings.read': 'View finance settings',
+  'users.manage': 'Manage system users',
 };
 
 const FEE_COMPONENTS = [

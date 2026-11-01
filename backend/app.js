@@ -1,6 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
+const cookieParser = require('cookie-parser');
 const config = require('./config/env');
 const { assertRuntimeConfig } = require('./config/env');
 const { sanitizeBody } = require('./middleware/sanitize');
@@ -14,6 +15,7 @@ function createApp() {
   app.use(helmet());
   app.use(cors({ origin: config.clientOrigin, credentials: true }));
   app.use(express.json({ limit: '1mb' }));
+  app.use(cookieParser());
   app.use(sanitizeBody);
   app.use('/api/v1', buildRouter());
   app.use(notFound);

@@ -5,3 +5,4 @@ coverage/
 *.log
 backend/tests/.mongo-uri
 .DS_Store
+.mongo-data/

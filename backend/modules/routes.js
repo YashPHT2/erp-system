@@ -7,6 +7,8 @@ const { requireAuth } = require('../middleware/auth');
 const { requirePermission } = require('../middleware/requirePermission');
 const { getMeta, getSettings } = require('./auth/meta.service');
 const devAuthRoutes = require('./auth/devAuth.routes');
+const authRoutes = require('./auth/auth.routes');
+const userRoutes = require('./users/user.routes');
 const feeStructureRoutes = require('./feeStructure/feeStructure.routes');
 const feePaymentRoutes = require('./feeCollection/feeCollection.routes');
 const feeAccountRoutes = require('./feeCollection/feeAccount.routes');
@@ -32,6 +34,8 @@ function buildRouter() {
   const router = express.Router();
   router.get('/health', health);
   router.get('/meta', asyncHandler(async (req, res) => send(res, await getMeta())));
+
+  router.use('/auth', authRoutes);
 
   if (config.authMode === 'mock') {
     router.use('/dev-auth', devAuthRoutes);
@@ -59,6 +63,7 @@ function buildRouter() {
   router.use('/integration', integrationRoutes);
   router.use('/salary-profiles', profileRouter);
   router.use('/payroll', payrollRouter);
+  router.use('/users', userRoutes);
   return router;
 }
 

@@ -46,6 +46,18 @@ async function seed() {
   await refreshTransactionSupport();
 
   await Promise.all([
+    FeeStructure.init(),
+    FeeAccount.init(),
+    FeePayment.init(),
+    Receipt.init(),
+    Counter.init(),
+    SalaryProfile.init(),
+    Payroll.init(),
+    DevUser.init(),
+    SystemMeta.init(),
+  ]);
+
+  await Promise.all([
     FeeStructure.deleteMany({}),
     FeeAccount.deleteMany({}),
     FeePayment.deleteMany({}),
