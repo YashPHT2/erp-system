@@ -75,7 +75,7 @@ export function ReportsPage() {
             <button
               key={item.id}
               type="button"
-              className={`rounded-md px-3 py-1.5 text-sm ${tab === item.id ? 'bg-indigo-50 font-medium text-indigo-700' : 'text-slate-600 hover:bg-slate-100'}`}
+              className={`rounded-md px-3 py-1.5 text-sm ${tab === item.id ? 'bg-blue-50 font-medium text-blue-700' : 'text-slate-600 hover:bg-slate-100'}`}
               onClick={() => setParams({ tab: item.id })}
             >
               {item.label}

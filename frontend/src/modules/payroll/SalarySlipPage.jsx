@@ -4,6 +4,7 @@ import { Printer } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { usePageMeta } from '../../hooks/usePageMeta';
 import { payrollService } from '../../services/financeService';
+import { teachingService } from '../teaching/teachingService';
 import { getErrorMessage } from '../../services/api';
 import { formatDate, formatInr } from '../../utils/format';
 import { LogoMark } from '../../components/LogoMark';
@@ -11,24 +12,26 @@ import { Alert } from '../../components/Alert';
 import { AccessDenied } from '../../components/AccessDenied';
 import { StatusBadge } from '../../components/StatusBadge';
 
-export function SalarySlipPage() {
+export function SalarySlipPage({ teacher = false }) {
   const { id } = useParams();
   const { can } = useAuth();
+  const allowed = can(teacher ? 'teaching.self' : 'payroll.read');
   usePageMeta('Salary slip', 'Payroll');
   const [slip, setSlip] = useState(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!can('payroll.read')) return;
-    payrollService.slip(id).then(setSlip).catch((err) => setError(getErrorMessage(err)));
-  }, [id, can]);
+    if (!allowed) return;
+    setSlip(null); setError('');
+    (teacher ? teachingService : payrollService).slip(id).then(setSlip).catch((err) => setError(getErrorMessage(err)));
+  }, [id, allowed, teacher]);
 
-  if (!can('payroll.read')) return <AccessDenied />;
+  if (!allowed) return <AccessDenied />;
 
   return (
     <div>
       <div className="no-print mb-4 flex items-center justify-between">
-        <Link to="/payroll/slips" className="text-sm text-indigo-700">Back to salary slips</Link>
+        <Link to={teacher ? '/teacher/salary' : '/payroll/slips'} className="text-sm text-blue-700">Back to salary slips</Link>
         <button type="button" className="btn-secondary" onClick={() => window.print()}><Printer className="h-4 w-4" /> Print</button>
       </div>
       {error && <Alert>{error}</Alert>}

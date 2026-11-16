@@ -8,7 +8,10 @@
     "dev": "nodemon server.js",
     "start": "node server.js",
     "test": "jest --coverage --runInBand",
-    "seed": "node seed/seed.js"
+    "demo:seed": "node demo/seed.js",
+    "demo:teaching": "node demo/teaching.js",
+    "demo:student": "node demo/student.js",
+    "demo:library": "node demo/library.js"
   },
   "engines": {
     "node": ">=18"
@@ -17,16 +20,20 @@
     "bcryptjs": "^2.4.3",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
+    "csv-parse": "^7.0.3",
     "dotenv": "^16.6.1",
     "express": "^4.21.2",
     "helmet": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
-    "mongoose": "^8.19.2"
+    "mongoose": "^8.19.2",
+    "multer": "^2.5.0",
+    "nodemailer": "^10.3.1"
   },
   "devDependencies": {
     "jest": "^29.7.0",
     "mongodb-memory-server": "^10.2.3",
     "nodemon": "^3.1.10",
+    "smtp-server": "^3.21.3",
     "supertest": "^7.1.4"
   }
 }

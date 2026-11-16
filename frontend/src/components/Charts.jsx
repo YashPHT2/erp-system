@@ -14,7 +14,7 @@ import {
 } from 'recharts';
 import { formatInr } from '../utils/format';
 
-const MODE_COLORS = ['#4f46e5', '#0f766e', '#64748b'];
+const MODE_COLORS = ['#2563eb', '#0f766e', '#64748b'];
 
 function ChartTooltip({ active, payload, label }) {
   if (!active || !payload?.length) return null;
@@ -35,7 +35,7 @@ export function CollectionChart({ data }) {
           <XAxis dataKey="label" tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
           <YAxis tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} width={56} />
           <Tooltip content={<ChartTooltip />} />
-          <Area type="monotone" dataKey="amount" stroke="#4f46e5" fill="#eef2ff" strokeWidth={2} />
+          <Area type="monotone" dataKey="amount" stroke="#2563eb" fill="#eff6ff" strokeWidth={2} />
         </AreaChart>
       </ResponsiveContainer>
     </div>
@@ -72,7 +72,7 @@ export function MonthlyBarChart({ data }) {
           <XAxis dataKey="label" tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} />
           <YAxis tick={{ fontSize: 12, fill: '#64748b' }} axisLine={false} tickLine={false} width={56} />
           <Tooltip content={<ChartTooltip />} />
-          <Bar dataKey="amount" fill="#4f46e5" radius={[3, 3, 0, 0]} maxBarSize={28} />
+          <Bar dataKey="amount" fill="#2563eb" radius={[3, 3, 0, 0]} maxBarSize={28} />
         </BarChart>
       </ResponsiveContainer>
     </div>

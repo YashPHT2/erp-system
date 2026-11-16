@@ -1,17 +1,27 @@
+require('dotenv').config();
+const configuredUri = new URL(process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/edufinance_demo?replicaSet=rs0');
+configuredUri.pathname = '/edufinance_demo';
+process.env.MONGO_URI = configuredUri.toString();
+process.env.STUDENT_PROVIDER = 'mongo';
+process.env.EMPLOYEE_PROVIDER = 'mongo';
 const bcrypt = require('bcryptjs');
 const config = require('../config/env');
 const { assertRuntimeConfig } = require('../config/env');
 const { connectDb } = require('../config/db');
 const { refreshTransactionSupport } = require('../utils/transaction');
 const { currentAcademicYear, getZonedParts, zonedDateTimeToUtc } = require('../utils/dates');
-const { DEV_ACCOUNTS } = require('./devAccounts');
+const { DEMO_ACCOUNTS } = require('./accounts');
+const { getStudents, EMPLOYEES } = require('./directory');
+const Student = require('../models/Student');
+const Employee = require('../models/Employee');
+const User = require('../models/User');
 const FeeStructure = require('../models/FeeStructure');
 const FeeAccount = require('../models/FeeAccount');
 const FeePayment = require('../models/FeePayment');
 const Receipt = require('../models/Receipt');
 const Counter = require('../models/Counter');
 const { SalaryProfile, Payroll } = require('../models/Payroll');
-const { DevUser, SystemMeta } = require('../models/System');
+const { SystemMeta } = require('../models/System');
 const { createFeeStructure } = require('../modules/feeStructure/feeStructure.service');
 const { collectFee, getFeeAccountView } = require('../modules/feeCollection/feeCollection.service');
 const { cancelReceipt } = require('../modules/receipts/receipt.service');
@@ -37,10 +47,8 @@ async function seed() {
     throw new Error('Refusing to seed when NODE_ENV=production.');
   }
   assertRuntimeConfig();
-  const password = process.env.DEV_USER_PASSWORD || '';
-  if (password.length < 8) {
-    throw new Error('Set DEV_USER_PASSWORD to at least 8 characters in backend/.env before seeding.');
-  }
+  const password = process.env.DEMO_PASSWORD || 'Demo#Finance2026';
+  if (password.length < 12) throw new Error('Demo password must be at least 12 characters.');
 
   await connectDb();
   await refreshTransactionSupport();
@@ -53,26 +61,21 @@ async function seed() {
     Counter.init(),
     SalaryProfile.init(),
     Payroll.init(),
-    DevUser.init(),
+    User.init(),
+    Student.init(),
+    Employee.init(),
     SystemMeta.init(),
   ]);
 
-  await Promise.all([
-    FeeStructure.deleteMany({}),
-    FeeAccount.deleteMany({}),
-    FeePayment.deleteMany({}),
-    Receipt.deleteMany({}),
-    Counter.deleteMany({}),
-    SalaryProfile.deleteMany({}),
-    Payroll.deleteMany({}),
-    DevUser.deleteMany({}),
-    SystemMeta.deleteMany({}),
-  ]);
-
-  const passwordHash = await bcrypt.hash(password, 10);
-  if (config.authMode === 'mock') {
-    await DevUser.insertMany(DEV_ACCOUNTS.map((account) => ({ ...account, passwordHash })));
+  if (await User.exists({}) || await FeePayment.exists({}) || await Student.exists({})) {
+    throw new Error('Demo database already contains records. Existing data was preserved.');
   }
+  const passwordHash = await bcrypt.hash(password, 12);
+  await User.insertMany(DEMO_ACCOUNTS.map(account => ({ ...account, passwordHash })));
+  await Student.insertMany(getStudents().map(({ id, ...student }) => student));
+  await Employee.insertMany(EMPLOYEES.map(({ id, ...employee }) => employee));
+  principal.userId = String((await User.findOne({ role: 'PRINCIPAL' }))._id);
+  accountant.userId = String((await User.findOne({ role: 'ACCOUNTANT' }))._id);
 
   const academicYear = currentAcademicYear(new Date(), config.timezone);
   const structures = [
@@ -155,16 +158,16 @@ async function seed() {
   }
 
   const salaries = [
-    { employeeId: 'emp_1001', basicSalary: 52000, allowances: [{ code: 'HRA', amount: 12000 }, { code: 'DA', amount: 5000 }], deductions: [{ code: 'PF', amount: 6240 }, { code: 'PT', amount: 200 }] },
-    { employeeId: 'emp_1002', basicSalary: 42000, allowances: [{ code: 'HRA', amount: 8000 }], deductions: [{ code: 'PF', amount: 5040 }, { code: 'PT', amount: 200 }] },
-    { employeeId: 'emp_1003', basicSalary: 68000, allowances: [{ code: 'HRA', amount: 15000 }, { code: 'DA', amount: 6000 }], deductions: [{ code: 'PF', amount: 8160 }, { code: 'TDS', amount: 2500 }] },
-    { employeeId: 'emp_1004', basicSalary: 48000, allowances: [{ code: 'HRA', amount: 9000 }], deductions: [{ code: 'PF', amount: 5760 }, { code: 'PT', amount: 200 }] },
-    { employeeId: 'emp_1005', basicSalary: 36000, allowances: [{ code: 'HRA', amount: 6000 }], deductions: [{ code: 'PF', amount: 4320 }, { code: 'PT', amount: 200 }] },
-    { employeeId: 'emp_1006', basicSalary: 55000, allowances: [{ code: 'HRA', amount: 11000 }], deductions: [{ code: 'PF', amount: 6600 }, { code: 'PT', amount: 200 }] },
-    { employeeId: 'emp_1007', basicSalary: 32000, allowances: [{ code: 'HRA', amount: 5000 }], deductions: [{ code: 'PF', amount: 3840 }, { code: 'PT', amount: 200 }] },
-    { employeeId: 'emp_1008', basicSalary: 30000, allowances: [{ code: 'TRANSPORT', amount: 3000 }], deductions: [{ code: 'PF', amount: 3600 }, { code: 'PT', amount: 200 }] },
-    { employeeId: 'emp_1009', basicSalary: 90000, allowances: [{ code: 'HRA', amount: 20000 }], deductions: [{ code: 'PF', amount: 10800 }, { code: 'TDS', amount: 8000 }] },
-    { employeeId: 'emp_1010', basicSalary: 28000, allowances: [{ code: 'HRA', amount: 4000 }], deductions: [{ code: 'PF', amount: 3360 }, { code: 'PT', amount: 200 }] },
+    { employeeId: 'EMP1001', basicSalary: 52000, allowances: [{ code: 'HRA', amount: 12000 }, { code: 'DA', amount: 5000 }], deductions: [{ code: 'PF', amount: 6240 }, { code: 'PT', amount: 200 }] },
+    { employeeId: 'EMP1002', basicSalary: 42000, allowances: [{ code: 'HRA', amount: 8000 }], deductions: [{ code: 'PF', amount: 5040 }, { code: 'PT', amount: 200 }] },
+    { employeeId: 'EMP1003', basicSalary: 68000, allowances: [{ code: 'HRA', amount: 15000 }, { code: 'DA', amount: 6000 }], deductions: [{ code: 'PF', amount: 8160 }, { code: 'TDS', amount: 2500 }] },
+    { employeeId: 'EMP1004', basicSalary: 48000, allowances: [{ code: 'HRA', amount: 9000 }], deductions: [{ code: 'PF', amount: 5760 }, { code: 'PT', amount: 200 }] },
+    { employeeId: 'EMP1005', basicSalary: 36000, allowances: [{ code: 'HRA', amount: 6000 }], deductions: [{ code: 'PF', amount: 4320 }, { code: 'PT', amount: 200 }] },
+    { employeeId: 'EMP1006', basicSalary: 55000, allowances: [{ code: 'HRA', amount: 11000 }], deductions: [{ code: 'PF', amount: 6600 }, { code: 'PT', amount: 200 }] },
+    { employeeId: 'EMP1007', basicSalary: 32000, allowances: [{ code: 'HRA', amount: 5000 }], deductions: [{ code: 'PF', amount: 3840 }, { code: 'PT', amount: 200 }] },
+    { employeeId: 'EMP1008', basicSalary: 30000, allowances: [{ code: 'TRANSPORT', amount: 3000 }], deductions: [{ code: 'PF', amount: 3600 }, { code: 'PT', amount: 200 }] },
+    { employeeId: 'EMP1009', basicSalary: 90000, allowances: [{ code: 'HRA', amount: 20000 }], deductions: [{ code: 'PF', amount: 10800 }, { code: 'TDS', amount: 8000 }] },
+    { employeeId: 'EMP1010', basicSalary: 28000, allowances: [{ code: 'HRA', amount: 4000 }], deductions: [{ code: 'PF', amount: 3360 }, { code: 'PT', amount: 200 }] },
   ];
 
   for (const salary of salaries) {
@@ -192,10 +195,13 @@ async function seed() {
     await markPayrollPaid(run.id, accountant);
   }
 
-  await SystemMeta.create({ key: 'finance', demoSeed: true, seededAt: new Date() });
+  await SystemMeta.create({ key: 'demonstration' });
+  await require('./teaching').seedTeaching();
+  await require('./student').seedStudent();
+  await require('./library').seedLibrary();
   console.log(`Seeded EduFinance sample data for ${academicYear}.`);
-  console.log('Development users (password is DEV_USER_PASSWORD in backend/.env):');
-  for (const account of DEV_ACCOUNTS) {
+  console.log('Demo accounts (shared password: ' + password + ')');
+  for (const account of DEMO_ACCOUNTS) {
     console.log(`- ${account.role}: ${account.email}`);
   }
 }

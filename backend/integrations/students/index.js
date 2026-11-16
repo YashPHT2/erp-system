@@ -1,9 +1,9 @@
 const config = require('../../config/env');
-const mockProvider = require('./mockStudentProvider');
+const mongoProvider = require('./mongoStudentProvider');
 const httpProvider = require('./httpStudentProvider');
 
 function provider() {
-  return config.studentProvider === 'http' ? httpProvider : mockProvider;
+  return config.studentProvider === 'http' ? httpProvider : mongoProvider;
 }
 
 module.exports = {

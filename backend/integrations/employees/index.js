@@ -1,9 +1,9 @@
 const config = require('../../config/env');
-const mockProvider = require('./mockEmployeeProvider');
+const mongoProvider = require('./mongoEmployeeProvider');
 const httpProvider = require('./httpEmployeeProvider');
 
 function provider() {
-  return config.employeeProvider === 'http' ? httpProvider : mockProvider;
+  return config.employeeProvider === 'http' ? httpProvider : mongoProvider;
 }
 
 module.exports = {

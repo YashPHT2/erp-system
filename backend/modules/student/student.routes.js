@@ -1,0 +1,13 @@
+const express = require('express');
+const service = require('./student.service');
+const { requirePermission } = require('../../middleware/requirePermission');
+const { asyncHandler } = require('../../middleware/asyncHandler');
+const { send } = require('../../utils/respond');
+const router = express.Router();
+router.use(requirePermission('student.self'));
+router.use((req,res,next) => { res.set('Cache-Control','no-store'); next(); });
+router.get('/overview', asyncHandler(async (req,res) => send(res, await service.overview(req.user.userId, req.query))));
+router.get('/payments', asyncHandler(async (req,res) => send(res, await service.history(req.user.userId, req.query, 'payments'))));
+router.get('/receipts', asyncHandler(async (req,res) => send(res, await service.history(req.user.userId, req.query, 'receipts'))));
+router.get('/receipts/:id', asyncHandler(async (req,res) => send(res, await service.receipt(req.user.userId, req.params.id))));
+module.exports = router;

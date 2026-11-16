@@ -45,7 +45,7 @@ export function SalarySlipsPage() {
             { key: 'period', header: 'Period', render: (row) => row.periodLabel },
             { key: 'net', header: 'Net salary', align: 'right', render: (row) => formatInr(row.netSalary) },
             { key: 'status', header: 'Status', render: (row) => <StatusBadge status={row.status} /> },
-            { key: 'open', header: '', render: (row) => <Link className="font-medium text-indigo-700" to={`/payroll/slips/${row.id}`}>View slip</Link> },
+            { key: 'open', header: '', render: (row) => <Link className="font-medium text-blue-700" to={`/payroll/slips/${row.id}`}>View slip</Link> },
           ]}
         />
         <Pagination page={data?.page || 1} pages={data?.pages || 1} onPage={(page) => payrollService.list({ search, page }).then(setData)} />

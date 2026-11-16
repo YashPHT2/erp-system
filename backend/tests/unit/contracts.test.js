@@ -5,7 +5,7 @@ describe('integration contracts', () => {
   const originalFetch = global.fetch;
 
   afterEach(() => {
-    process.env.STUDENT_PROVIDER = 'mock';
+    process.env.STUDENT_PROVIDER = 'mongo';
     process.env.STUDENT_API_BASE_URL = '';
     global.fetch = originalFetch;
   });

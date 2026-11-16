@@ -29,7 +29,7 @@ describe('permissions', () => {
   });
 
   test('does not grant a teacher any finance permission', () => {
-    expect(permissionsForRole('TEACHER')).toEqual([]);
+    expect(permissionsForRole('TEACHER')).toEqual(['teaching.self','library.read','library.self']);
     expect(permissionsForRole('UNKNOWN')).toEqual([]);
   });
 });

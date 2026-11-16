@@ -63,7 +63,7 @@ export function PaymentHistoryPage() {
           rowKey={(row) => row.id}
           emptyTitle="No payments"
           columns={[
-            { key: 'receipt', header: 'Receipt', render: (row) => row.receiptId ? <Link className="font-medium text-indigo-700" to={`/fees/receipts/${row.receiptId}`}>{row.receiptNumber}</Link> : '—' },
+            { key: 'receipt', header: 'Receipt', render: (row) => row.receiptId ? <Link className="font-medium text-blue-700" to={`/fees/receipts/${row.receiptId}`}>{row.receiptNumber}</Link> : '—' },
             { key: 'student', header: 'Student', render: (row) => (
               <div>
                 <p className="font-medium text-slate-900">{row.studentName}</p>

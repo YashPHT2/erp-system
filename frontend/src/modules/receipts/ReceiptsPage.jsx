@@ -86,7 +86,7 @@ export function ReceiptsPage() {
           rowKey={(row) => row.id}
           emptyTitle="No receipts"
           columns={[
-            { key: 'number', header: 'Receipt', render: (row) => <Link className="font-medium text-indigo-700" to={`/fees/receipts/${row.id}`}>{row.receiptNumber}</Link> },
+            { key: 'number', header: 'Receipt', render: (row) => <Link className="font-medium text-blue-700" to={`/fees/receipts/${row.id}`}>{row.receiptNumber}</Link> },
             { key: 'student', header: 'Student', render: (row) => row.studentName },
             { key: 'date', header: 'Date', render: (row) => formatDate(row.paymentDate) },
             { key: 'mode', header: 'Mode', render: (row) => modeLabel(row.paymentMode, meta?.paymentModes) },

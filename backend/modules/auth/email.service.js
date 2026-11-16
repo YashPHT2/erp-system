@@ -1,54 +1,19 @@
-'use strict';
-
+const nodemailer = require('nodemailer');
 const config = require('../../config/env');
-
-let transporter = null;
-try {
-  const nodemailer = require('nodemailer');
-  if (config.smtpHost) {
-    transporter = nodemailer.createTransport({
-      host: config.smtpHost,
-      port: config.smtpPort || 587,
-      secure: (config.smtpPort || 587) === 465,
-      auth: {
-        user: config.smtpUser,
-        pass: config.smtpPass,
-      },
-    });
-  }
-} catch (_e) {
-  transporter = null;
-}
-
-async function sendPasswordReset(email, name, rawToken) {
-  const clientOrigin = process.env.CLIENT_ORIGIN || 'http://localhost:5173';
-  const resetUrl = `${clientOrigin}/reset-password?token=${rawToken}`;
-
-  if (!transporter || !config.smtpHost) {
-    console.log(`[email.service] Password reset link for ${email}: ${resetUrl}`);
-    return;
-  }
-
-  const from = config.smtpFrom || 'EduFinance <noreply@edufinance.local>';
-
+const ApiError = require('../../utils/ApiError');
+function isConfigured() { return Boolean(config.smtpHost && config.smtpFrom); }
+const escapeHtml = value => String(value).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+async function sendPasswordReset(email, name, token) {
+  if (!isConfigured()) throw new ApiError(503, 'Password-reset email is not configured.', 'EMAIL_NOT_CONFIGURED');
+  const transport = nodemailer.createTransport({ host: config.smtpHost, port: config.smtpPort, secure: config.smtpPort === 465,
+    ...(config.smtpUser ? { auth: { user: config.smtpUser, pass: config.smtpPass } } : {}),
+    connectionTimeout: 10000, socketTimeout: 15000 });
+  const url = `${config.clientOrigin}/reset-password#token=${encodeURIComponent(token)}`;
   try {
-    await transporter.sendMail({
-      from,
-      to: email,
-      subject: 'Reset your EduFinance password',
-      html: `
-        <p>Hi ${name},</p>
-        <p>You requested a password reset. Click the link below to set a new password:</p>
-        <p><a href="${resetUrl}">${resetUrl}</a></p>
-        <p>This link expires in 1 hour. If you did not request this, you can safely ignore this email.</p>
-        <p>— EduFinance Team</p>
-      `,
-      text: `Hi ${name},\n\nReset your password here: ${resetUrl}\n\nThis link expires in 1 hour.`,
-    });
-  } catch (err) {
-    // Never throw — email failures must not break the API
-    console.error('[email.service] Failed to send password reset email:', err.message);
-  }
+    await transport.sendMail({ from: config.smtpFrom, to: email, subject: 'Reset your EduFinance password',
+      text: `Hi ${name},\n\nReset your password: ${url}\n\nThis link expires in one hour.`,
+      html: `<p>Hi ${escapeHtml(name)},</p><p><a href="${escapeHtml(url)}">Reset your password</a></p><p>This link expires in one hour.</p>` });
+  } catch (_) { throw new ApiError(503, 'Email delivery is unavailable. Please try again later.', 'EMAIL_DELIVERY_FAILED'); }
+  finally { transport.close(); }
 }
-
-module.exports = { sendPasswordReset };
+module.exports = { sendPasswordReset, isConfigured };

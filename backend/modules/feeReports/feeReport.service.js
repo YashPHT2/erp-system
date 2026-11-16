@@ -3,7 +3,6 @@ const FeeStructure = require('../../models/FeeStructure');
 const FeeAccount = require('../../models/FeeAccount');
 const Receipt = require('../../models/Receipt');
 const { Payroll } = require('../../models/Payroll');
-const { SystemMeta } = require('../../models/System');
 const studentDirectory = require('../../integrations/students');
 const config = require('../../config/env');
 const ApiError = require('../../utils/ApiError');
@@ -299,7 +298,7 @@ async function dashboard() {
   const trendStart = monthRange(months[0].year, months[0].month, config.timezone).start;
   const trendEnd = monthRange(months[months.length - 1].year, months[months.length - 1].month, config.timezone).end;
 
-  const [yearPayments, todayPayments, trendPayments, recentPayments, recentReceipts, balances, payrollAll, meta] = await Promise.all([
+  const [yearPayments, todayPayments, trendPayments, recentPayments, recentReceipts, balances, payrollAll] = await Promise.all([
     FeePayment.find({ status: 'completed', academicYear }),
     completedPaymentsBetween(today.start, today.end),
     completedPaymentsBetween(trendStart, trendEnd),
@@ -307,7 +306,6 @@ async function dashboard() {
     Receipt.find().sort({ paymentDate: -1 }).limit(5),
     buildBalanceRows({ academicYear }),
     Payroll.aggregate([{ $group: { _id: null, total: { $sum: '$netSalaryPaise' }, count: { $sum: 1 } } }]),
-    SystemMeta.findOne({ key: 'finance' }),
   ]);
 
   const trendBuckets = new Map(months.map((month) => [month.key, 0]));
@@ -337,7 +335,6 @@ async function dashboard() {
 
   return {
     academicYear,
-    demoSeed: Boolean(meta?.demoSeed),
     totals: {
       feeCollection: fromPaise(sumPayments(yearPayments)),
       pendingFees: fromPaise(pendingPaise),

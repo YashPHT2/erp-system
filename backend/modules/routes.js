@@ -6,7 +6,6 @@ const { asyncHandler } = require('../middleware/asyncHandler');
 const { requireAuth } = require('../middleware/auth');
 const { requirePermission } = require('../middleware/requirePermission');
 const { getMeta, getSettings } = require('./auth/meta.service');
-const devAuthRoutes = require('./auth/devAuth.routes');
 const authRoutes = require('./auth/auth.routes');
 const userRoutes = require('./users/user.routes');
 const feeStructureRoutes = require('./feeStructure/feeStructure.routes');
@@ -37,20 +36,9 @@ function buildRouter() {
 
   router.use('/auth', authRoutes);
 
-  if (config.authMode === 'mock') {
-    router.use('/dev-auth', devAuthRoutes);
-  } else {
-    router.use('/dev-auth', (req, res) => {
-      res.status(404).json({
-        success: false,
-        message: 'The requested resource was not found.',
-        code: 'NOT_FOUND',
-      });
-    });
-  }
-
+  router.use('/dev-auth', (req, res) => res.status(404).json({ success: false, message: 'The requested resource was not found.', code: 'NOT_FOUND' }));
   router.use(requireAuth);
-  router.get('/auth/me', me);
+  router.get('/auth/me', (req, res) => { res.set('Cache-Control', 'no-store'); return me(req, res); });
   router.get('/settings', requirePermission('settings.read'), asyncHandler(async (req, res) => {
     send(res, await getSettings());
   }));
@@ -64,6 +52,10 @@ function buildRouter() {
   router.use('/salary-profiles', profileRouter);
   router.use('/payroll', payrollRouter);
   router.use('/users', userRoutes);
+  router.use('/directory', require('./directory/directory.routes'));
+  router.use('/teaching', require('./teaching/teaching.routes'));
+  router.use('/student', require('./student/student.routes'));
+  router.use('/library', require('./library/library.routes'));
   return router;
 }
 

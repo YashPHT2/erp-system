@@ -4,6 +4,7 @@ import { Printer } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { usePageMeta } from '../../hooks/usePageMeta';
 import { feeService } from '../../services/financeService';
+import { studentService } from '../student/studentService';
 import { getErrorMessage } from '../../services/api';
 import { classLabel, formatDateTime, formatInr, modeLabel } from '../../utils/format';
 import { LogoMark } from '../../components/LogoMark';
@@ -11,24 +12,28 @@ import { Alert } from '../../components/Alert';
 import { AccessDenied } from '../../components/AccessDenied';
 import { StatusBadge } from '../../components/StatusBadge';
 
-export function ReceiptDetailPage() {
+export function ReceiptDetailPage({ student = false }) {
   const { id } = useParams();
   const { can, meta } = useAuth();
+  const allowed = can(student ? 'student.self' : 'fees.read');
   usePageMeta('Receipt', 'Fee management');
   const [receipt, setReceipt] = useState(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
-    if (!can('fees.read')) return;
-    feeService.getReceipt(id).then(setReceipt).catch((err) => setError(getErrorMessage(err)));
-  }, [id, can]);
+    let active = true;
+    if (!allowed) return;
+    setReceipt(null); setError('');
+    (student ? studentService : feeService).getReceipt(id).then(result => { if (active) setReceipt(result); }).catch(err => { if (active) setError(getErrorMessage(err)); });
+    return () => { active = false; };
+  }, [id, allowed, student]);
 
-  if (!can('fees.read')) return <AccessDenied />;
+  if (!allowed) return <AccessDenied />;
 
   return (
     <div>
       <div className="no-print mb-4 flex items-center justify-between">
-        <Link to="/fees/receipts" className="text-sm text-indigo-700">Back to receipts</Link>
+        <Link to={student ? '/student/receipts' : '/fees/receipts'} className="text-sm text-blue-700">Back to receipts</Link>
         <button type="button" className="btn-secondary" onClick={() => window.print()}><Printer className="h-4 w-4" /> Print</button>
       </div>
       {error && <Alert>{error}</Alert>}

@@ -1,153 +1,99 @@
 # EduFinance
 
-Finance and payroll module for a School and University ERP. This project covers fee structures, fee collection, receipts, financial reports, and payroll. Student records, employee records, and authentication belong to the other ERP modules and are used through the integration layer below.
+Database-backed fees, receipts, reports, and payroll for a school or university. Accounts, students, employees, and financial records are stored in MongoDB. The default live setup has no built-in accounts or sample transactions. An explicitly selected demonstration database is available.
 
-Sample numbers created by the seed script are development data. The dashboard shows a banner when that sample set is loaded. They are not live institution transactions.
+## Run locally
 
-## Stack
+Requires Node.js 18+ and MongoDB Community Server (a replica set), or a MongoDB Atlas replica set.
 
-- React, Vite, Tailwind CSS, React Router, Axios, Lucide, Recharts, React Hook Form
-- Node.js, Express, MongoDB, Mongoose
-- JWT for the shared login token
-- bcrypt password hashes for development users only (`bcryptjs`)
-- Jest, Supertest, and MongoDB Memory Server
-
-## Setup
-
-Requires Node.js 18+ and a local MongoDB. A replica set is recommended so fee payments and receipt cancellation commit together. On a standalone server the API still saves the records in a safe order and restores the balance if a later write fails.
-
-```bash
+```powershell
 npm install
-npm install --prefix backend
-npm install --prefix frontend
-copy backend\.env.example backend\.env
-```
-
-Edit `backend/.env` and set `JWT_SECRET` to a long random value. Quote `DEV_USER_PASSWORD` if it contains `#`, because an unquoted `#` is treated as a comment.
-
-```bash
-npm run seed --prefix backend
+npm run install:all
+npm run configure
 npm run dev
 ```
 
-`npm run dev` starts the API on port 5050 and the web app on port 5173. Open http://localhost:5173.
+`configure` creates `backend/.env` with random JWT and one-time setup secrets if the file does not already exist, and prints a local setup link. Open that link to create your administrator with your own email and password. Sign in at http://localhost:5173. Setup is disabled once an account exists. Remove SETUP_TOKEN from the environment after setup.
 
-| Script | Purpose |
-| --- | --- |
-| `npm run dev` | API and web app together |
-| `npm test` | Backend unit and API tests |
-| `npm run seed` | Load development finance data and mock users |
-| `npm start` | API only |
+`npm run dev` starts an actual MongoDB server when the configured local port is unused, the API on 5050, and Vite on 5173. MongoDB writes to `.mongo-data`; data is never seeded or reset. Install `mongod` in PATH or set `MONGOD_BINARY` to its absolute path. An existing downloaded local executable can also be reused. If `MONGO_URI` points to an external replica set, that connection is used. Standalone MongoDB is rejected: finance and account changes require transactions.
 
-The seed script refuses to run when `NODE_ENV=production`. It replaces finance collections in the configured database.
+The app uses the clean `edufinance_live` database. The previous `edufinance` development database remains separate and is never imported or erased by startup.
 
-## Development sign-in
+## Accounts and records
 
-Mock login is available only when `AUTH_MODE=mock`. It is rejected when `NODE_ENV=production`.
+The first administrator creates accounts in **Administration ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â ÃƒÂ¢Ã¢â€šÂ¬Ã¢â€žÂ¢ User accounts**. Roles are Super Admin, Principal, Accountant, Fee Clerk, Teacher, Student, and Librarian. Account changes invalidate existing sessions. Accounts are disabled rather than deleted to retain audit references. The final active administrator cannot be removed.
 
-| Role | Email |
-| --- | --- |
-| Super Admin | superadmin@edufinance.local |
-| Principal | principal@edufinance.local |
-| Accountant | accountant@edufinance.local |
-| Fee Clerk | clerk@edufinance.local |
-| Teacher | teacher@edufinance.local |
+Create students and employees under **Administration**. Set up fee structures before collecting fees, and salary profiles before processing payroll. Inactive employees cannot be paid. Enrollment details are locked once a fee account exists to protect its ledger. This module records cash, cheque, and bank-transfer transactions entered by authorized staff; it does not perform online bank settlement.
 
-The password is `DEV_USER_PASSWORD` from `backend/.env`. The sample value in `.env.example` is `EduFinance#Dev2026`.
+JWT access tokens expire after 15 minutes by default and are held only in browser memory. Refresh tokens are random, stored as SHA-256 hashes in MongoDB, rotated atomically, and delivered in HttpOnly SameSite cookies. The frontend refreshes sessions on reload and after access-token expiry. Logout revokes the session, including outstanding access tokens. Authorization uses the current database role on every request. Passwords use bcrypt, with a minimum of 12 characters and a maximum of 72 UTF-8 bytes. Login, setup, and password endpoints have database-backed rate limits.
 
-## Roles
+## Email (configure later)
 
-The API reads the role from the verified token. A role sent in the request body is ignored.
+Password-reset screens and one-time reset-token handling are implemented. Delivery stays unavailable until `SMTP_HOST`, `SMTP_PORT`, and `SMTP_FROM` are configured. Add `SMTP_USER` and `SMTP_PASS` if authentication is required. The app explicitly reports unavailable delivery when unconfigured. It never logs reset links or pretends an email was sent. Administrators can set passwords in User accounts; signed-in users can change their passwords from the profile menu.
 
-| Action | Super Admin | Principal | Accountant | Fee Clerk | Teacher |
-| --- | --- | --- | --- | --- | --- |
-| Create or update fee structures | Yes | Yes | No | No | No |
-| Collect fees and cancel receipts | Yes | No | Yes | Yes | No |
-| View fees and reports | Yes | Yes | Yes | Yes | No |
-| Set salaries and process payroll | Yes | No | Yes | No | No |
-| View payroll | Yes | Yes | Yes | No | No |
+## Optional real external directories
 
-Overpayment is rejected unless `ALLOW_OVERPAYMENT=true` and the request sets `approvedOverpayment` to true. The default is to reject any payment above the pending balance.
+`STUDENT_PROVIDER=mongo` and `EMPLOYEE_PROVIDER=mongo` use local database records. Set either provider to `http` and its corresponding API base URL to connect another real ERP directory. Local edits are disabled for externally managed records.
 
-Net salary is basic salary plus allowances minus deductions. A negative result is rejected. Payroll for the same employee and month cannot be saved twice. Salary slips keep the components from the day payroll was processed.
+Student API: `GET /students?search=&className=&section=&academicYear=` and `GET /students/by-admission/{admissionNumber}`. Fields: `id`, `admissionNumber`, `name`, `className`, `academicYear`, optional `section`.
 
-## Money rules
+Employee API: `GET /employees?search=` and `GET /employees/{id}`. Fields: `id`, `employeeCode`, `name`, `designation`, `department`, `status` (active or inactive). Lists can be arrays, `{ data: [] }`, or `{ data: { items: [] } }`. The bearer token is forwarded.
 
-- Amounts are stored as integer paise and shown in INR.
-- Zero and negative payments are rejected. Fee components must be greater than zero.
-- A receipt number looks like `RCP-2026-000001`.
-- Cancelling a receipt keeps the document, records who cancelled it, when, and why, and adds the amount back to the pending balance.
-- Cancelled receipts are excluded from collection reports.
-- A section-specific fee structure overrides the class-wide structure. Otherwise the class-wide structure is used.
-- The class on a fee account cannot be changed after a payment. A mismatch with the student record blocks the next collection.
+## Production
 
-## Integration contract
+Set `NODE_ENV=production`, a long random `JWT_SECRET`, `CLIENT_ORIGIN` to your HTTPS frontend origin, and an authenticated replica-set `MONGO_URI`. Use TLS and database network access controls. Configure `API_HOST` for your deployment network. Serve the frontend build behind HTTPS with `/api` proxied to the backend and SPA fallback enabled. Production refresh cookies require HTTPS. Keep `.env` out of source control and configure database backups and monitoring.
 
-Set `AUTH_MODE=jwt` when the shared authentication module is ready. Tokens are verified with `JWT_SECRET` using HS256. If `JWT_PUBLIC_KEY` is set in jwt mode, tokens are verified with RS256 instead.
-
-Expected claims:
-
-```json
-{
-  "sub": "user-id",
-  "name": "Vikram Joshi",
-  "email": "vikram@school.edu",
-  "role": "ACCOUNTANT"
-}
+```powershell
+npm run build
+npm start
 ```
 
-`role` may be `SUPER_ADMIN`, `PRINCIPAL`, `ACCOUNTANT`, `FEE_CLERK`, or `TEACHER`. Spaces and case are normalized, so `Fee Clerk` becomes `FEE_CLERK`.
+## Validation
 
-Student and employee data are not owned by this module.
+`npm test` runs backend tests against an isolated temporary MongoDB replica set. Test-only fixtures never populate the running app. Tests cover JWT authentication, concurrent refresh and initial setup, logout/password revocation, real local SMTP delivery, user and directory management, fees, receipts, reports, and payroll. `npm run build` builds React for production.
 
-- `STUDENT_PROVIDER=mock` uses the temporary directory in `backend/integrations/mockData/directory.js`.
-- `STUDENT_PROVIDER=http` calls `STUDENT_API_BASE_URL`.
+Amounts are stored as integer paise with server-side balance checks, unique receipt/payment keys, receipt cancellation reversals, and payroll snapshots.
 
-```http
-GET {STUDENT_API_BASE_URL}/students?search=&className=&section=&academicYear=
-GET {STUDENT_API_BASE_URL}/students/by-admission/{admissionNumber}
-```
+## Live demonstration
 
-A student object, or `{ "data": { ... } }`, must include `id` (string or number), `admissionNumber`, `name`, `className`, and `academicYear`. `section` is optional.
+The current local app is configured for `edufinance_demo` with `DEMO_MODE=true`. Its seven demo accounts use `Demo#Finance2026`; the login screen offers role selectors. Demonstration data is clearly marked and uses the same database-backed login, JWT sessions, and finance services as live mode.
 
-```http
-GET {EMPLOYEE_API_BASE_URL}/employees?search=
-GET {EMPLOYEE_API_BASE_URL}/employees/{id}
-```
+`npm run demo:seed` creates the separate demo database with 12 students, 10 employees, fee structures, payments, receipts, salary profiles, and payroll history. It refuses to overwrite a populated database and cannot run in production. Ordinary startup never seeds data. To return to live mode, set `MONGO_URI` to `edufinance_live` and `DEMO_MODE=false`, then restart. Existing live accounts and records are preserved.
 
-An employee object must include `id`, `employeeCode`, `name`, `designation`, and `department`. `status` defaults to `active`. Inactive employees cannot be paid.
+## Teacher workspace
 
-Lists may be a raw array, `{ "data": [] }`, or `{ "data": { "items": [] } }`. The same bearer token is forwarded.
+Teachers sign in to a dedicated dashboard with their own salary breakdown, payment history and printable salary slips, assigned sections, a section-filtered weekly timetable, attendance registers and assignments. Teachers cannot read other employees' salaries or manage unassigned sections.
 
-Replace the provider by changing the environment variables. Do not copy student or employee collections into this module.
+Super Admin and Principal accounts use **Administration > Teaching management** to create teaching sections, link a teacher account to an employee, assign subjects and sections, and add timetable lessons. Overlapping lessons for a teacher or section are rejected. Create Teacher-role accounts in User accounts first.
 
-## Tests
+Attendance can be entered manually or uploaded as a CSV (maximum 256 KB), using `admissionNumber,status` columns. Include every enrolled student exactly once; statuses are `present`, `absent`, `late`, or `excused`. Download the template from the attendance page. Each teacher maintains one register per section/date; resubmission updates that register. Future dates and unassigned students are rejected.
 
-```bash
-npm test
-```
+Assignments support instructions and optional PDF, Word, text, PNG or JPEG attachments up to 5 MB. Choose all assigned sections or select specific sections. Metadata and file contents persist in MongoDB, and attachment downloads require authentication and ownership. This module stores assignments against teaching sections; the student fee portal provides a separate login for fee records.
 
-Tests cover fee calculation, partial and full payment, overpayment, duplicate submits, receipt numbers, cancellation and balance reversal, role checks, report totals, salary calculation, negative salary, duplicate payroll, and salary slip contents. The suite uses an in-memory replica set so the transaction path is exercised.
+The existing demonstration teacher is linked to EMP1001 with three mathematics sections, weekday lessons, salary history, assignments and attendance. `npm run demo:teaching` adds these teaching examples to an already-populated demonstration database without replacing existing records.
 
-## Layout
+The current app uses its own persistent MongoDB replica set on local port **27018**, avoiding any system MongoDB service on 27017. It continues to use `.mongo-data`. The interface uses blue and neutral colors.
 
-```text
-backend/
-  modules/feeStructure
-  modules/feeCollection
-  modules/receipts
-  modules/feeReports
-  modules/payroll
-  integrations/
-frontend/src/
-  components
-  layouts
-  modules/dashboard
-  modules/feeStructure
-  modules/feeCollection
-  modules/receipts
-  modules/feeReports
-  modules/payroll
-```
+## Student fee portal
 
-Business rules live in the service files. Routes check permissions before those services run.
+Students have a dedicated JWT-authenticated fee dashboard with their own fee breakdown, total/paid/pending amounts, payment progress, academic-year history, payments, and printable receipts. Cancelled payments are excluded from paid totals and cancelled receipts remain visible for reference. Student access is read-only; payments are recorded by authorized accounts staff. No payment gateway is simulated.
+
+Super Admin creates Student-role accounts in **Administration > User accounts** and selects the linked student record. Create the student record first. One student record can be linked to one student account. Changing that link revokes existing sessions. Student routes derive their scope from the database account link, never from a user-supplied admission number or student ID.
+
+Demo student: `student@edufinance.local`, password `Demo#Finance2026`, linked to Aarav Sharma (`ADM2026001`, Grade 10 A). `npm run demo:student` adds this account to the existing demo database without modifying fees or existing users. The ordinary demo seed includes it as well.
+
+## Library management
+
+Librarian, Super Admin and Principal accounts manage the book catalog, physical copies, issues, returns and renewals. Each copy has a unique accession number. Students and teachers can browse the catalog and view only their own borrowing records. Staff confirm physical check-outs and returns; members cannot issue books to themselves or alter stock.
+
+Library policies: up to five outstanding titles per borrower, one active copy of each title per borrower, a default 14-day loan, due dates within 60 days, and up to two renewals. Overdue days are tracked. Good returns become available, damaged copies go to maintenance, and lost copies stay unavailable. Titles with outstanding loans cannot be archived. MongoDB transactions and unique active-loan indexes prevent the same copy being issued twice, including concurrent requests.
+
+Open **Library** in the sidebar. The Librarian account opens directly to the library dashboard. Demo login: `librarian@edufinance.local`, password `Demo#Finance2026`. `npm run demo:library` adds eight sample titles, 24 copies and student/teacher loan examples to the existing demonstration database without resetting records.
+
+## Login and account concurrency
+
+Accounts have unique email addresses. Student accounts also have a database-enforced unique student admission link. Concurrent duplicate creation produces one successful account and a 409 response for the duplicate. Display names alone are not unique: different students may legitimately have the same name.
+
+Five incorrect passwords lock that account for 15 minutes. The first four failures return 401 with remaining attempts; the fifth returns 429 and a Retry-After header. A correct password does not bypass an active lock. A successful login before the lock resets failed attempts. Counters live in MongoDB and updates are serialized so parallel attempts cannot bypass the limit. A separate IP request limiter also remains enabled.
+
+Assessment scenarios and commands are in `ASSESSMENT-TEST-CASES.md`.

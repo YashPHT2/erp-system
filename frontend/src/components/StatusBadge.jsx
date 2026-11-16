@@ -1,5 +1,12 @@
 export function StatusBadge({ status }) {
   const styles = {
+    available: 'bg-emerald-50 text-emerald-700 ring-emerald-600/15',
+    issued: 'bg-blue-50 text-blue-700 ring-blue-600/15',
+    overdue: 'bg-rose-50 text-rose-700 ring-rose-600/15',
+    returned: 'bg-slate-100 text-slate-700 ring-slate-500/10',
+    maintenance: 'bg-amber-50 text-amber-800 ring-amber-600/15',
+    lost: 'bg-rose-50 text-rose-700 ring-rose-600/15',
+    retired: 'bg-slate-100 text-slate-500 ring-slate-500/10',
     completed: 'bg-emerald-50 text-emerald-700 ring-emerald-600/15',
     active: 'bg-emerald-50 text-emerald-700 ring-emerald-600/15',
     paid: 'bg-emerald-50 text-emerald-700 ring-emerald-600/15',

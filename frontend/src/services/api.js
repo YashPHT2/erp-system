@@ -1,32 +1,48 @@
 import axios from 'axios';
-import { TOKEN_KEY } from '../utils/format';
-
-const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || '/api/v1',
-});
-
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem(TOKEN_KEY);
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+const options = { baseURL: import.meta.env.VITE_API_URL || '/api/v1', withCredentials: true };
+export const authApi = axios.create(options);
+const api = axios.create(options);
+let accessToken = '';
+let generation = 0;
+let refreshPromise;
+export function setAccessToken(token) { accessToken = token || ''; }
+export function clearAccessToken() { generation += 1; accessToken = ''; }
+async function rotateSession() {
+  const started = generation;
+  const { data } = await authApi.post('/auth/refresh');
+  if (started !== generation) throw new Error('Session changed.');
+  setAccessToken(data.data.accessToken);
+  return data.data;
+}
+export function refreshSession() {
+  if (!refreshPromise) {
+    const perform = () => rotateSession();
+    refreshPromise = (navigator.locks ? navigator.locks.request('edufinance-session', perform) : perform())
+      .finally(() => { refreshPromise = null; });
   }
+  return refreshPromise;
+}
+api.interceptors.request.use(config => {
+  if (accessToken) config.headers.Authorization = `Bearer ${accessToken}`;
   return config;
 });
-
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    const url = error.config?.url || '';
-    const status = error.response?.status;
-    if (status === 401 && !url.includes('/dev-auth/login') && !url.includes('/meta')) {
-      localStorage.removeItem(TOKEN_KEY);
-      if (!window.location.pathname.startsWith('/login')) {
-        window.location.assign('/login');
+api.interceptors.response.use(response => response, async error => {
+  const request = error.config;
+  if (request && error.response?.status === 401 && !request._retried && request.url !== '/meta') {
+    request._retried = true;
+    try {
+      await refreshSession();
+      return api(request);
+    } catch (refreshError) {
+      if (refreshError.response?.status === 401) {
+        clearAccessToken();
+        window.dispatchEvent(new Event('edufinance:session-ended'));
       }
+      return Promise.reject(refreshError);
     }
-    return Promise.reject(error);
-  },
-);
+  }
+  return Promise.reject(error);
+});
 
 export function unwrap(response) {
   return response.data.data;

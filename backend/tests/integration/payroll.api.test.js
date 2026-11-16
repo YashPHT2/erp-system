@@ -32,7 +32,7 @@ beforeEach(clearTestDb);
 describe('payroll', () => {
   test('saves a salary profile and calculates net salary', async () => {
     const response = await request(app)
-      .put('/api/v1/salary-profiles/emp_1001')
+      .put('/api/v1/salary-profiles/000000000000000000001001')
       .set(auth('ACCOUNTANT'))
       .send(salaryBody());
 
@@ -43,13 +43,13 @@ describe('payroll', () => {
 
   test('rejects negative salary values and a negative net salary', async () => {
     const negative = await request(app)
-      .put('/api/v1/salary-profiles/emp_1001')
+      .put('/api/v1/salary-profiles/000000000000000000001001')
       .set(auth('SUPER_ADMIN'))
       .send(salaryBody({ basicSalary: -1 }));
     expect(negative.status).toBe(400);
 
     const net = await request(app)
-      .put('/api/v1/salary-profiles/emp_1001')
+      .put('/api/v1/salary-profiles/000000000000000000001001')
       .set(auth('ACCOUNTANT'))
       .send(salaryBody({ deductions: [{ code: 'PF', amount: 500 }] }));
     expect(net.status).toBe(400);
@@ -58,11 +58,11 @@ describe('payroll', () => {
 
   test('processes payroll once, keeps the snapshot, and builds a salary slip', async () => {
     const header = auth('ACCOUNTANT', { name: 'Vikram Joshi' });
-    await request(app).put('/api/v1/salary-profiles/emp_1001').set(header).send(salaryBody());
+    await request(app).put('/api/v1/salary-profiles/000000000000000000001001').set(header).send(salaryBody());
     const period = currentPeriod();
 
     const created = await request(app).post('/api/v1/payroll').set(header).send({
-      employeeId: 'emp_1001',
+      employeeId: '000000000000000000001001',
       ...period,
     });
     expect(created.status).toBe(201);
@@ -71,13 +71,13 @@ describe('payroll', () => {
     expect(created.body.data.status).toBe('processed');
 
     const duplicate = await request(app).post('/api/v1/payroll').set(header).send({
-      employeeId: 'emp_1001',
+      employeeId: '000000000000000000001001',
       ...period,
     });
     expect(duplicate.status).toBe(409);
     expect(duplicate.body.code).toBe('DUPLICATE_PAYROLL');
 
-    await request(app).put('/api/v1/salary-profiles/emp_1001').set(header).send(salaryBody({ basicSalary: 500 }));
+    await request(app).put('/api/v1/salary-profiles/000000000000000000001001').set(header).send(salaryBody({ basicSalary: 500 }));
     const stored = await request(app).get(`/api/v1/payroll/${created.body.data.id}`).set(header);
     expect(stored.body.data.basicSalary).toBe(100);
     expect(stored.body.data.netSalary).toBe(90);
@@ -108,9 +108,9 @@ describe('payroll', () => {
 
   test('rejects a future month and inactive employees', async () => {
     const header = auth('ACCOUNTANT');
-    await request(app).put('/api/v1/salary-profiles/emp_1001').set(header).send(salaryBody());
+    await request(app).put('/api/v1/salary-profiles/000000000000000000001001').set(header).send(salaryBody());
     const future = await request(app).post('/api/v1/payroll').set(header).send({
-      employeeId: 'emp_1001',
+      employeeId: '000000000000000000001001',
       ...nextPeriod(),
     });
     expect(future.status).toBe(400);
@@ -132,19 +132,19 @@ describe('payroll', () => {
 
   test('lists salaries and payroll, and previews a valid month', async () => {
     const header = auth('ACCOUNTANT');
-    await request(app).put('/api/v1/salary-profiles/emp_1001').set(header).send(salaryBody());
+    await request(app).put('/api/v1/salary-profiles/000000000000000000001001').set(header).send(salaryBody());
     const salaries = await request(app).get('/api/v1/salary-profiles').query({ search: 'Meera' }).set(header);
     expect(salaries.body.data.items.some((item) => item.profile?.netSalary === 90)).toBe(true);
 
     const period = currentPeriod();
     const preview = await request(app).post('/api/v1/payroll/preview').set(header).send({
-      employeeId: 'emp_1001',
+      employeeId: '000000000000000000001001',
       ...period,
     });
     expect(preview.status).toBe(200);
     expect(preview.body.data.netSalary).toBe(90);
 
-    await request(app).post('/api/v1/payroll').set(header).send({ employeeId: 'emp_1001', ...period });
+    await request(app).post('/api/v1/payroll').set(header).send({ employeeId: '000000000000000000001001', ...period });
     const history = await request(app).get('/api/v1/payroll').query({
       search: 'EMP1001',
       status: 'processed',
@@ -165,7 +165,7 @@ describe('payroll', () => {
       const response = await request(app)
         .post('/api/v1/payroll')
         .set(auth(role))
-        .send({ employeeId: 'emp_1001', ...currentPeriod() });
+        .send({ employeeId: '000000000000000000001001', ...currentPeriod() });
       expect(response.status).toBe(403);
     }
   });

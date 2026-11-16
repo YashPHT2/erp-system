@@ -12,8 +12,18 @@ import { StatusBadge } from '../../components/StatusBadge';
 import { CollectionChart, ModeChart } from '../../components/Charts';
 import { AccessDenied } from '../../components/AccessDenied';
 import { Alert } from '../../components/Alert';
+import { TeacherDashboardPage } from '../teaching/TeacherDashboardPage';
+import { LibraryPage } from '../library/LibraryPage';
+import { StudentDashboardPage } from '../student/StudentDashboardPage';
 
 export function DashboardPage() {
+  const { user } = useAuth();
+  if (user?.role === 'LIBRARIAN') return <LibraryPage />;
+  if (user?.role === 'STUDENT') return <StudentDashboardPage />;
+  return user?.role === 'TEACHER' ? <TeacherDashboardPage /> : <FinanceDashboardPage />;
+}
+
+function FinanceDashboardPage() {
   const { can, meta } = useAuth();
   usePageMeta('Overview', 'Overview');
   const [data, setData] = useState(null);
@@ -49,7 +59,7 @@ export function DashboardPage() {
         <section className="card p-5 lg:col-span-2">
           <div className="mb-3 flex items-center justify-between">
             <h2 className="text-sm font-semibold text-slate-900">Monthly collection</h2>
-            <Link to="/reports" className="text-xs font-medium text-indigo-700 hover:text-indigo-800">View reports</Link>
+            <Link to="/reports" className="text-xs font-medium text-blue-700 hover:text-blue-800">View reports</Link>
           </div>
           <CollectionChart data={data?.monthlyCollection || []} />
         </section>
@@ -72,7 +82,7 @@ export function DashboardPage() {
         <section className="card lg:col-span-2">
           <div className="flex gap-4 border-b border-slate-100 px-4">
             {['payments', 'receipts'].map((item) => (
-              <button key={item} type="button" className={`border-b-2 py-3 text-sm font-medium capitalize ${tab === item ? 'border-indigo-600 text-indigo-700' : 'border-transparent text-slate-500'}`} onClick={() => setTab(item)}>
+              <button key={item} type="button" className={`border-b-2 py-3 text-sm font-medium capitalize ${tab === item ? 'border-blue-600 text-blue-700' : 'border-transparent text-slate-500'}`} onClick={() => setTab(item)}>
                 Recent {item}
               </button>
             ))}
@@ -103,7 +113,7 @@ export function DashboardPage() {
               rowKey={(row) => row.id}
               emptyTitle="No receipts yet"
               columns={[
-                { key: 'number', header: 'Receipt', render: (row) => <Link className="font-medium text-indigo-700" to={`/fees/receipts/${row.id}`}>{row.receiptNumber}</Link> },
+                { key: 'number', header: 'Receipt', render: (row) => <Link className="font-medium text-blue-700" to={`/fees/receipts/${row.id}`}>{row.receiptNumber}</Link> },
                 { key: 'student', header: 'Student', render: (row) => row.studentName },
                 { key: 'status', header: 'Status', render: (row) => <StatusBadge status={row.status} /> },
                 { key: 'balance', header: 'Balance', align: 'right', render: (row) => formatInr(row.remainingBalance) },
@@ -128,7 +138,7 @@ export function DashboardPage() {
               </li>
             ))}
           </ul>
-          <Link to="/fees/defaulters" className="mt-2 inline-block text-xs font-medium text-indigo-700">Open defaulter list</Link>
+          <Link to="/fees/defaulters" className="mt-2 inline-block text-xs font-medium text-blue-700">Open defaulter list</Link>
         </section>
       </div>
     </div>

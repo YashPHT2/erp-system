@@ -5,12 +5,14 @@
   "description": "Finance and payroll module for the School and University ERP",
   "scripts": {
     "install:all": "npm install --prefix backend && npm install --prefix frontend",
-    "dev": "concurrently -k -n api,web -c blue,green \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
+    "dev": "node start-mongo.js",
     "test": "npm test --prefix backend",
-    "seed": "npm run seed --prefix backend",
-    "start": "npm start --prefix backend"
-  },
-  "devDependencies": {
-    "concurrently": "^9.1.2"
+    "start": "npm start --prefix backend",
+    "configure": "node scripts/configure.js",
+    "build": "npm run build --prefix frontend",
+    "demo:seed": "npm run demo:seed --prefix backend",
+    "demo:teaching": "npm run demo:teaching --prefix backend",
+    "demo:student": "npm run demo:student --prefix backend",
+    "demo:library": "npm run demo:library --prefix backend"
   }
 }

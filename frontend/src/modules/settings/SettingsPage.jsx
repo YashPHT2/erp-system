@@ -29,7 +29,8 @@ export function SettingsPage() {
           <Item label="Academic year" value={settings?.academicYear} />
           <Item label="Timezone" value={settings?.timezone} />
           <Item label="Currency" value={settings?.currency} />
-          <Item label="Authentication" value={settings?.authMode === 'mock' ? 'Development mock' : 'Shared JWT'} />
+          <Item label="Authentication" value="JWT account sessions" />
+          <Item label="Password-reset email" value={settings?.passwordResetAvailable ? 'Configured' : 'Not configured'} />
           <Item label="Overpayment policy" value={settings?.overpaymentAllowed ? 'Allowed with explicit approval' : 'Not allowed'} />
           <Item label="Student records" value={settings?.integration?.students?.provider} />
           <Item label="Employee records" value={settings?.integration?.employees?.provider} />

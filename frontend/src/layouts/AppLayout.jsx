@@ -25,11 +25,7 @@ export function AppLayout() {
           <Navbar onMenu={() => setMobileOpen(true)} />
           <main className="px-4 py-6 md:px-8">
             <div className="mx-auto max-w-[1360px]">
-              {meta?.demoSeed && (
-                <div className="no-print mb-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-                  Development sample data is loaded in this database. These figures are not live institution transactions.
-                </div>
-              )}
+              {meta?.demo && <div className="mb-4 rounded-md border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">Live demonstration — all accounts, students, and transactions shown here are sample data.</div>}
               <Outlet />
             </div>
           </main>

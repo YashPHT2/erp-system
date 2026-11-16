@@ -6,3 +6,5 @@ coverage/
 backend/tests/.mongo-uri
 .DS_Store
 .mongo-data/
+output/playwright/
+.playwright-cli/

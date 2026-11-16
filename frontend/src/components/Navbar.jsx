@@ -11,6 +11,7 @@ export function Navbar({ onMenu }) {
   const page = usePageTitle();
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
+  const [logoutError, setLogoutError] = useState('');
   const [menuOpen, setMenuOpen] = useState(false);
   const [notesOpen, setNotesOpen] = useState(false);
   const [notes, setNotes] = useState([]);
@@ -104,12 +105,14 @@ export function Navbar({ onMenu }) {
               <div className="px-3 py-2">
                 <p className="text-sm font-medium text-slate-900">{user?.name}</p>
                 <p className="text-xs text-slate-500">{user?.email}</p>
-                <p className="mt-1 text-xs font-medium text-indigo-700">{user?.roleLabel}</p>
+                <p className="mt-1 text-xs font-medium text-blue-700">{user?.roleLabel}</p>
               </div>
               <button type="button" className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-slate-700 hover:bg-slate-50" onClick={() => { setMenuOpen(false); setProfileOpen(true); }}>
                 <UserRound className="h-4 w-4" /> Profile
               </button>
-              <button type="button" className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-slate-700 hover:bg-slate-50" onClick={logout}>
+              <button type="button" className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-slate-700 hover:bg-slate-50" onClick={() => { setMenuOpen(false); navigate('/account/password'); }}>Change password</button>
+              {logoutError && <p className="px-3 py-2 text-xs text-rose-700">{logoutError}</p>}
+              <button type="button" className="flex w-full items-center gap-2 rounded-md px-3 py-2 text-sm text-slate-700 hover:bg-slate-50" onClick={async () => { try { await logout(); } catch (error) { setLogoutError(getErrorMessage(error)); } }}>
                 <LogOut className="h-4 w-4" /> Log out
               </button>
             </div>
@@ -129,7 +132,7 @@ export function Navbar({ onMenu }) {
               <div className="flex justify-between gap-4"><dt className="text-slate-500">User ID</dt><dd className="truncate text-slate-900">{user?.userId}</dd></div>
             </dl>
             <p className="mt-4 text-xs leading-5 text-slate-500">
-              Authentication is provided by the shared ERP login. In development, EduFinance can issue a local token when mock authentication is enabled.
+              Your account permissions are managed by your institution administrator.
             </p>
             <div className="mt-4 flex justify-end">
               <button type="button" className="btn-secondary" onClick={() => setProfileOpen(false)}>Close</button>

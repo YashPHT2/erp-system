@@ -1,4 +1,4 @@
-const ROLES = ['SUPER_ADMIN', 'PRINCIPAL', 'ACCOUNTANT', 'FEE_CLERK', 'TEACHER'];
+const ROLES = ['SUPER_ADMIN', 'PRINCIPAL', 'ACCOUNTANT', 'FEE_CLERK', 'TEACHER', 'STUDENT', 'LIBRARIAN'];
 
 const ROLE_LABELS = {
   SUPER_ADMIN: 'Super Admin',
@@ -6,20 +6,30 @@ const ROLE_LABELS = {
   ACCOUNTANT: 'Accountant',
   FEE_CLERK: 'Fee Clerk',
   TEACHER: 'Teacher',
+  STUDENT: 'Student',
+  LIBRARIAN: 'Librarian',
 };
 
 // Server-side permission matrix. Frontend display must not be trusted in place of this.
 const PERMISSIONS = {
   'feeStructure.read': ['SUPER_ADMIN', 'PRINCIPAL', 'ACCOUNTANT', 'FEE_CLERK'],
   'feeStructure.write': ['SUPER_ADMIN', 'PRINCIPAL'],
-  'fees.collect': ['ACCOUNTANT', 'FEE_CLERK'],
+  'fees.collect': ['SUPER_ADMIN', 'ACCOUNTANT', 'FEE_CLERK'],
   'fees.read': ['SUPER_ADMIN', 'PRINCIPAL', 'ACCOUNTANT', 'FEE_CLERK'],
-  'receipts.cancel': ['ACCOUNTANT', 'FEE_CLERK'],
+  'receipts.cancel': ['SUPER_ADMIN', 'ACCOUNTANT', 'FEE_CLERK'],
   'reports.read': ['SUPER_ADMIN', 'PRINCIPAL', 'ACCOUNTANT', 'FEE_CLERK'],
   'payroll.read': ['SUPER_ADMIN', 'PRINCIPAL', 'ACCOUNTANT'],
   'payroll.write': ['SUPER_ADMIN', 'ACCOUNTANT'],
   'settings.read': ['SUPER_ADMIN', 'PRINCIPAL', 'ACCOUNTANT', 'FEE_CLERK'],
   'users.manage': ['SUPER_ADMIN'],
+  'directory.students': ['SUPER_ADMIN', 'PRINCIPAL'],
+  'directory.employees': ['SUPER_ADMIN', 'PRINCIPAL'],
+  'teaching.self': ['TEACHER'],
+  'teaching.manage': ['SUPER_ADMIN', 'PRINCIPAL'],
+  'student.self': ['STUDENT'],
+  'library.read': ['SUPER_ADMIN','PRINCIPAL','LIBRARIAN','TEACHER','STUDENT'],
+  'library.manage': ['SUPER_ADMIN','PRINCIPAL','LIBRARIAN'],
+  'library.self': ['TEACHER','STUDENT'],
 };
 
 const PERMISSION_LABELS = {
@@ -33,6 +43,14 @@ const PERMISSION_LABELS = {
   'payroll.write': 'Set salaries and process payroll',
   'settings.read': 'View finance settings',
   'users.manage': 'Manage system users',
+  'directory.students': 'Manage students',
+  'directory.employees': 'Manage employees',
+  'teaching.self': 'View own teaching, salary, attendance and assignments',
+  'teaching.manage': 'Manage teaching sections, teacher links and timetable',
+  'student.self': 'View own student profile, fees, payments and receipts',
+  'library.read': 'Browse the library catalog',
+  'library.manage': 'Manage books, copies, issues and returns',
+  'library.self': 'View own borrowed books and due dates',
 };
 
 const FEE_COMPONENTS = [

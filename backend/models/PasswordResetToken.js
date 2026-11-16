@@ -3,6 +3,7 @@ const { registerModel } = require('./shared');
 
 const passwordResetTokenSchema = new mongoose.Schema({
   userId: { type: String, required: true },
+  userVersion: { type: Number, required: true },
   tokenHash: { type: String, required: true, unique: true },
   expiresAt: { type: Date, required: true, index: { expireAfterSeconds: 0 } },
   usedAt: { type: Date },

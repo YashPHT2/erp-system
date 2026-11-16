@@ -1,17 +1,21 @@
-'use strict';
-
 const express = require('express');
 const controller = require('./auth.controller');
 const { asyncHandler } = require('../../middleware/asyncHandler');
 const { requireAuth } = require('../../middleware/auth');
-
+const { rateLimit } = require('../../middleware/rateLimit');
+const ApiError = require('../../utils/ApiError');
+const config = require('../../config/env');
 const router = express.Router();
-
-router.post('/login', asyncHandler(controller.login));
-router.post('/refresh', asyncHandler(controller.refresh));
+router.use((req, res, next) => {
+  res.set('Cache-Control', 'no-store');
+  if (req.headers.origin && req.headers.origin !== config.clientOrigin) return next(new ApiError(403, 'Request origin is not allowed.', 'INVALID_ORIGIN'));
+  next();
+});
+router.post('/setup', rateLimit('setup', 10), asyncHandler(controller.setup));
+router.post('/login', rateLimit('login', 30), asyncHandler(controller.login));
+router.post('/refresh', rateLimit('refresh', 120), asyncHandler(controller.refresh));
 router.post('/logout', asyncHandler(controller.logout));
-router.post('/forgot-password', controller.sensitiveRateLimit, asyncHandler(controller.forgotPassword));
-router.post('/reset-password', controller.sensitiveRateLimit, asyncHandler(controller.resetPassword));
-router.post('/change-password', requireAuth, asyncHandler(controller.changePassword));
-
+router.post('/forgot-password', rateLimit('password', 10), asyncHandler(controller.forgotPassword));
+router.post('/reset-password', rateLimit('reset', 10), asyncHandler(controller.resetPassword));
+router.post('/change-password', requireAuth, rateLimit('change-password', 10), asyncHandler(controller.changePassword));
 module.exports = router;
